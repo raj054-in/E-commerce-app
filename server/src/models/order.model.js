@@ -4,15 +4,21 @@ const orderSchema=new mongoose.Schema({
     userId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
-        require:true
+        require:true,
+        index:true
     },
     // from the cart it will get transfered 
-    products:[
+    items:[
             {
                 productId:{
                     type:mongoose.Schema.Types.ObjectId,
                     ref:"Product",
                     required:true
+                },
+                name:{
+                    type:String,
+                    required:true
+
                 },
                 quantity:{
                     type:Number,
@@ -45,36 +51,24 @@ const orderSchema=new mongoose.Schema({
             required:true
         }  
     },
-    shippingFee:{
-        type:Number,
-        required:true
-    },
-    discountPrice:{
-        type:Number,
-        required:true
-    },
-    totalPrice:{
-        type:String,
-        required:true
-    },
-    paymentMehod:{
-        type:String,
-        required:true,
-        enum:[
-            "paypal","COD"
-        ]
-    },
-    paymentStatus:{
-        type:String,
-        required:true,
-        enum:[
-            "PENDING","PROCESSING","SHIPPED","DELIVERED","CANCELLED"
-        ]
+  
+    totalAmount: { type: Number, required: true },
+    currency: { type: String, default: "NPR" }, 
+ 
+    paymentMethod: { type: String, default: "esewa" },
+ 
+    esewaTransactionUuid: { type: String, index: true },
+    esewaRefId: String, 
+    
+    paymentStatus: { type: String, enum: ["pending", "paid"], default: "pending" },
+    paidAt: Date,
+ 
+    
+    deliveryStatus: {
+      type: String,
+      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      default: "pending"
     }
-
-    
-    
-    
 
 },{
     timestamps:true
