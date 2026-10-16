@@ -21,13 +21,14 @@ function App() {
   return (
     <>
      <div>
-      App
+      
       <Routes>
         <Route path='/auth' element={<Authlayout/>}>
           <Route path='login' element={<Login/>}/>
           <Route path='signup' element={<Register/>}/>
         </Route>
         <Route path='/admin' element={<AdminLayout/>}>
+          <Route path='dashboard' element={<AdminDashboard/>}/>
           <Route path='dashboar' element={<AdminDashboard/>}/>
           <Route path='products' element={<AdminProduct/>}/>
           <Route path='orders' element={<AdminOrders/>}/>
