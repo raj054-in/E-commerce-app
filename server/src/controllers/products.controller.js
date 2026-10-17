@@ -129,7 +129,12 @@ async function updateProduct(req,res) {
 async function  deleteProduct(req,res) {
     try {
         const productId=req.params.id
-        const deletedProduct=await userModel.findByIdAndDelete(productId)
+        const deletedProduct=await productModel.findByIdAndDelete(productId)
+        if (!deletedProduct) {
+            return res.status(404).json({
+                message:"Product not found"
+            })
+        }
         res.status(200).json({
             message:"product deleted sucessfully",
             deletedProduct
