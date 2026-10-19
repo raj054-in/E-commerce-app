@@ -11,7 +11,7 @@ routes.post('/verify',authMiddleWare,verifyEsewaPayment)
 
 
 routes.get('/admin',authMiddleWare,roleMiddleWare('admin'),getAllOrders)
-routes.patch('/admin/:id/delivery',authMiddleWare,roleMiddleWare('admin',updateDeliveryStatus))
+routes.patch('/admin/:id/delivery',authMiddleWare,roleMiddleWare('admin'),updateDeliveryStatus)
 
 
 

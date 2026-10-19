@@ -48,6 +48,7 @@ const mockProducts = [
 
 const initialState = {
   products: mockProducts,
+  shopProducts:[],
   totalPages: 1,
   currentPage: 1,
   isLoading: false,

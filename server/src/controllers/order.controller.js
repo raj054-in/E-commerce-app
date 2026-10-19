@@ -11,7 +11,7 @@ async function getMyOrders(req,res) {
         const orders= await orderModel.find({
             userId:userId
         })
-        res.status.json({
+        res.status(200).json({
             message:"You Orders Fetched Sucessfully",
             orders
         })
@@ -154,26 +154,27 @@ async function getAllOrders(req,res) {
         const skip=(page-1)*limit
         const filter={}
         if (req.query.deliveryStatus) {
-            filter.deliveryStatus=deliveryStatus
+            filter.deliveryStatus=req.query.deliveryStatus
         }
-        const [orders,total]=await Promise.all[
+        const [orders,total]=await Promise.all([
             orderModel.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .populate("userId","name")
+            .populate("items.productId","images")
             .lean()
             ,
 
             orderModel.countDocuments(filter)
-        ]
+        ])
         
         res.json({
             orders,
             page,
             limit,
             totalOrders: total,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.max(1, Math.ceil(total / limit)),
         });
     } catch (error) {
           res.status(500).json({
@@ -187,8 +188,23 @@ async function getAllOrders(req,res) {
 async function updateDeliveryStatus(req,res) {
     try {
         const orderId=req.params.id
-        const {deliveryStatus}=req.body 
-        const updatedOrder=await orderModel.findByIdAndUpdate(orderId,{deliveryStatus},{new:true})
+        const { deliveryStatus } = req.body
+        const allowedStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
+
+        if (!allowedStatuses.includes(deliveryStatus)) {
+            return res.status(400).json({ message: "Invalid delivery status" })
+        }
+
+        const updatedOrder=await orderModel.findByIdAndUpdate(
+            orderId,
+            { deliveryStatus },
+            { new: true, runValidators: true }
+        )
+
+        if (!updatedOrder) {
+            return res.status(404).json({ message: "Order not found" })
+        }
+
         res.json(updatedOrder)
     } catch (error) {
         res.status(500).json({
