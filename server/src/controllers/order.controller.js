@@ -5,6 +5,8 @@ const {buildPaymentForm,decodeAndVerifyCallback,checkTransactionStatus}=require(
 const productModel = require('../models/products.model')
 const userModel = require('../models/user.model')
 
+const toMoney = (value) => Number(Number(value).toFixed(2))
+
 
 async function getMyOrders(req,res) {
     try {
@@ -48,13 +50,20 @@ async function createOrder(req,res) {
        let items=[]
        let totalAmount=0
        for(const item of cart.products ){
+        const unitPrice = Number(item.productId.discountPrice ?? item.productId.price)
+        const lineTotal = toMoney(unitPrice * item.quantity)
+
+        if (!Number.isFinite(unitPrice) || unitPrice < 0 || !Number.isFinite(lineTotal)) {
+            return res.status(400).json({ message: "The cart contains an invalid product price" })
+        }
+
         items.push({
             productId:item.productId._id,
             name:item.productId.name,
             quantity:item.quantity,
-             total:(item.productId.discountPrice || item.productId.price)*item.quantity
+            total:lineTotal
         })
-         totalAmount+=(item.productId.discountPrice || item.productId.price)*item.quantity
+         totalAmount=toMoney(totalAmount + lineTotal)
 
        }
        const order=await orderModel.create({
@@ -204,7 +213,7 @@ async function verifyEsewaPayment(req,res) {
         payload.product_code==process.env.ESEWA_PRODUCT_CODE &&
         payload.status === "COMPLETE" &&
         status.status === "COMPLETE" &&
-        Number(String(payload.total_amount).replace(/,/g, ""))===order.totalAmount
+        toMoney(Number(String(payload.total_amount).replace(/,/g, "")))===toMoney(order.totalAmount)
 
 
         if (!isValid) {

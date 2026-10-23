@@ -5,7 +5,9 @@ function sign(fields,fieldsName){
       return crypto.createHmac("sha256", process.env.ESEWA_SECRET_KEY).update(message).digest("base64")
 }
 function buildPaymentForm(order,transactionUuid){
-    const amount=String(order.totalAmount)
+    // eSewa validates total_amount arithmetically. Always send a currency
+    // value with at most two decimal places, never a floating-point artifact.
+    const amount=Number(order.totalAmount).toFixed(2)
     
   const fields = {
     amount,
@@ -44,7 +46,7 @@ function decodeAndVerifyCallback(base64Data){
 async function checkTransactionStatus({ totalAmount, transactionUuid }) {
   const url = new URL(process.env.ESEWA_STATUS_URL)
   url.searchParams.set("product_code", process.env.ESEWA_PRODUCT_CODE)
-  url.searchParams.set("total_amount", String(totalAmount))
+  url.searchParams.set("total_amount", Number(totalAmount).toFixed(2))
   url.searchParams.set("transaction_uuid", transactionUuid)
  
   const res = await fetch(url)
