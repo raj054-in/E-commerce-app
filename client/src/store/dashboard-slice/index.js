@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import { API_URL } from "@/lib/api";
 
 const initialState = {
   summary: null,
@@ -12,7 +13,7 @@ const fetchDashboardSummary = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        "http://localhost:3000/api/orders/admin/summary",
+        `${API_URL}/api/orders/admin/summary`,
         { withCredentials: true }
       );
 

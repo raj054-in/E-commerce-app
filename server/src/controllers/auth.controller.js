@@ -4,6 +4,14 @@ const bcrypt= require('bcrypt')
 const jwt = require('jsonwebtoken')
 const {UploadAvatar}=require("../config/cloudinary")
 
+const authCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+    path: "/"
+}
+
 async function SignUp(req, res) {
     try {
     const {name,email,password}=req.body
@@ -56,7 +64,7 @@ async function SignUp(req, res) {
         const token = await jwt.sign({id:createUser._id,role:createUser.role},process.env.JWT_SECRET_KEY,{expiresIn:'1d'})
         const userResponse = createUser.toObject()
         delete userResponse.password
-        res.cookie("token", token)
+        res.cookie("token", token, authCookieOptions)
         res.status(201).json({
             message:"user Registered Sucessfully",
             user:userResponse
@@ -99,7 +107,7 @@ async function LogIn(req,res) {
             })
         }
         const token = await jwt.sign({id:user._id,role:user.role},process.env.JWT_SECRET_KEY,{expiresIn:"1d"})
-        res.cookie("token",token)
+        res.cookie("token", token, authCookieOptions)
         const userRes=user.toObject()
         delete userRes.password
         res.status(200).json({
@@ -123,7 +131,7 @@ async function LogOut(req,res) {
         await blackListTokenModel.create({
             token
         })
-        res.clearCookie("token")
+        res.clearCookie("token", authCookieOptions)
         res.status(200).json({
             message:"User logged out sucessfully "
         })

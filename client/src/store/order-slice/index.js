@@ -1,6 +1,7 @@
 
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import axios from 'axios'
+import { API_URL } from '@/lib/api'
 
 const initialState={
     userOrders:[],
@@ -16,7 +17,7 @@ const initialState={
 }
 const fetchAllOrders=createAsyncThunk("orders/fetchAllOrders",async({page=1,limit=8},{rejectWithValue})=>{
     try {
-        const response=await axios.get(`http://localhost:3000/api/orders/admin?page=${page}&limit=${limit}`,{
+        const response=await axios.get(`${API_URL}/api/orders/admin?page=${page}&limit=${limit}`,{
             withCredentials:true
         })
         return{
@@ -37,7 +38,7 @@ const fetchAllOrders=createAsyncThunk("orders/fetchAllOrders",async({page=1,limi
 
 const fetchMyOrders=createAsyncThunk("orders/fetchMyOrders",async(_,{rejectWithValue})=>{
     try {
-        const response=await axios.get("http://localhost:3000/api/orders/my",{withCredentials:true})
+        const response=await axios.get(`${API_URL}/api/orders/my`,{withCredentials:true})
         return response.data.orders || []
     } catch (error) {
         return rejectWithValue(
@@ -47,7 +48,7 @@ const fetchMyOrders=createAsyncThunk("orders/fetchMyOrders",async(_,{rejectWithV
 })
 const updateDeliveryStatus=createAsyncThunk("orders/updateOrderStatus",async({id,data},{rejectWithValue})=>{
     try {
-        const response =await axios.patch(`http://localhost:3000/api/orders/admin/${id}/delivery`,data,{withCredentials:true})
+        const response =await axios.patch(`${API_URL}/api/orders/admin/${id}/delivery`,data,{withCredentials:true})
         return response.data
     } catch (error) {
          return rejectWithValue(
@@ -60,7 +61,7 @@ const updateDeliveryStatus=createAsyncThunk("orders/updateOrderStatus",async({id
 
 const createOrder=createAsyncThunk("orders/createOrder",async(shippingAddress,{rejectWithValue})=>{
     try {
-        const response=await axios.post("http://localhost:3000/api/orders",shippingAddress,{withCredentials:true})
+        const response=await axios.post(`${API_URL}/api/orders`,shippingAddress,{withCredentials:true})
         return response.data
     } catch (error) {
         const serverError = error.response?.data?.error
@@ -74,7 +75,7 @@ const createOrder=createAsyncThunk("orders/createOrder",async(shippingAddress,{r
 
 const resumePendingPayment=createAsyncThunk("orders/resumePendingPayment",async(orderId,{rejectWithValue})=>{
     try {
-        const response=await axios.post(`http://localhost:3000/api/orders/${orderId}/payment`,{}, {withCredentials:true})
+        const response=await axios.post(`${API_URL}/api/orders/${orderId}/payment`,{}, {withCredentials:true})
         return response.data
     } catch (error) {
         return rejectWithValue(
@@ -85,7 +86,7 @@ const resumePendingPayment=createAsyncThunk("orders/resumePendingPayment",async(
 
 const deletePendingOrder=createAsyncThunk("orders/deletePendingOrder",async(orderId,{rejectWithValue})=>{
     try {
-        const response=await axios.delete(`http://localhost:3000/api/orders/${orderId}`,{withCredentials:true})
+        const response=await axios.delete(`${API_URL}/api/orders/${orderId}`,{withCredentials:true})
         return response.data
     } catch (error) {
         return rejectWithValue(
@@ -96,7 +97,7 @@ const deletePendingOrder=createAsyncThunk("orders/deletePendingOrder",async(orde
 
 const verifyEsewaPayment=createAsyncThunk("orders/verifyEsewaPayment",async(data,{rejectWithValue})=>{
     try {
-        const response=await axios.post("http://localhost:3000/api/orders/verify",{data},{withCredentials:true})
+        const response=await axios.post(`${API_URL}/api/orders/verify`,{data},{withCredentials:true})
         return response.data
     } catch (error) {
         return rejectWithValue(

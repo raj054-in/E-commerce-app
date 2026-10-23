@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import { API_URL } from "@/lib/api";
 
 const mockProducts = [
   {
@@ -69,7 +70,7 @@ const fetchProducts = createAsyncThunk(
         }
       });
       const response = await axios.get(
-        `http://localhost:3000/api/products/?${params.toString()}`,
+        `${API_URL}/api/products/?${params.toString()}`,
         {
         withCredentials: true,
         }
@@ -97,7 +98,7 @@ const fetchProductById = createAsyncThunk(
   "product/fetchProductById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`http://localhost:3000/api/products/${id}`, {
+      const response = await axios.get(`${API_URL}/api/products/${id}`, {
         withCredentials: true,
       });
       return response.data.product;
@@ -113,7 +114,7 @@ const fetchProductById = createAsyncThunk(
 
 const addNewProduct = createAsyncThunk("product/addNewProduct", async (formData,{rejectWithValue}) => {
     try {
-        const response =await axios.post("http://localhost:3000/api/products",formData,{withCredentials:true})
+        const response =await axios.post(`${API_URL}/api/products`,formData,{withCredentials:true})
         return response.data
     } catch (error) {
          return rejectWithValue(
@@ -127,7 +128,7 @@ const addNewProduct = createAsyncThunk("product/addNewProduct", async (formData,
 
 const updateProduct = createAsyncThunk("product/updateProduct", async ({ id, formData },{rejectWithValue}) => {
     try {
-        const response=await axios.patch(`http://localhost:3000/api/products/${id}`,formData,{withCredentials:true}) 
+        const response=await axios.patch(`${API_URL}/api/products/${id}`,formData,{withCredentials:true})
         return response.data
         
     } catch (error) {
@@ -141,7 +142,7 @@ const updateProduct = createAsyncThunk("product/updateProduct", async ({ id, for
 
 const deleteProduct = createAsyncThunk("product/deleteProduct", async (id,{rejectWithValue}) => {
     try {
-        await axios.delete(`http://localhost:3000/api/products/${id}`,{withCredentials:true})
+        await axios.delete(`${API_URL}/api/products/${id}`,{withCredentials:true})
         return id
         
     } catch (error) {

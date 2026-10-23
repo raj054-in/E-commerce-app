@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import { API_URL } from "@/lib/api";
 
 const initialState={
     isAuthenticated:false,
@@ -10,7 +11,7 @@ const initialState={
 const signUpUser=createAsyncThunk('auth/signUpUser',async(userData,{rejectWithValue})=>{
     try {
         const response=await axios.post(
-            'http://localhost:3000/api/auths/signup',
+            `${API_URL}/api/auths/signup`,
             userData,
             { withCredentials: true }
         )
@@ -28,7 +29,7 @@ const signUpUser=createAsyncThunk('auth/signUpUser',async(userData,{rejectWithVa
 const loginUser=createAsyncThunk('auth/loginUser',async(userData,{rejectWithValue})=>{
     try {
         const response=await axios.post(
-            'http://localhost:3000/api/auths/login',
+            `${API_URL}/api/auths/login`,
             userData,
             { withCredentials: true }
         )
@@ -44,7 +45,7 @@ const loginUser=createAsyncThunk('auth/loginUser',async(userData,{rejectWithValu
 const logoutUser=createAsyncThunk('auth/logoutUser',async(_,{rejectWithValue})=>{
     try {
         const response=await axios.post(
-            'http://localhost:3000/api/auths/logout',
+            `${API_URL}/api/auths/logout`,
             {},
             { withCredentials:true }
         )
@@ -59,7 +60,7 @@ const logoutUser=createAsyncThunk('auth/logoutUser',async(_,{rejectWithValue})=>
 const getProfile=createAsyncThunk('auth/getProfile',async(_,{rejectWithValue})=>{
     try {
         const response=await axios.get(
-            'http://localhost:3000/api/auths/get-profile',
+            `${API_URL}/api/auths/get-profile`,
             { withCredentials:true }
         )
         return response.data
