@@ -40,7 +40,7 @@ async function addToCart(req,res) {
                  message:"User not loggged In"
                 })
             }
-        if (!product ||productQuantity>product.countInStock) {
+        if (!product || !Number.isInteger(productQuantity) || productQuantity < 1 || productQuantity>product.countInStock) {
                 return res.status(400).json({ message: "Product unavailable or out of stock" });  
             }
 
@@ -52,6 +52,9 @@ async function addToCart(req,res) {
     
         const productIndex=userCart.products.findIndex(item=>item.productId.toString()==productId)
         if (productIndex>-1) {
+            if (userCart.products[productIndex].quantity + productQuantity > product.countInStock) {
+                return res.status(400).json({ message: "Requested quantity exceeds available stock" });
+            }
             userCart.products[productIndex].quantity+=productQuantity
 
         }
@@ -86,7 +89,7 @@ async function updateCart(req,res) {
             })
         }
         const product=await productModel.findById(productId)
-        if (!product ||productQuantity>product.countInStock) {
+        if (!product || !Number.isInteger(productQuantity) || productQuantity < 1 || productQuantity>product.countInStock) {
             return res.status(400).json({ message: "Product unavailable or out of stock" });  
         }
         const cartUpdate=await cartModel.updateOne({
@@ -128,7 +131,7 @@ async function updateCart(req,res) {
 }
 async function removeItem(req,res) {
     try {
-        const productId=req.body||req.params.id
+        const productId=req.params.id || req.body?.productId
         const userId=req.user._id
         if(!userId){
             return res.status(400).json({

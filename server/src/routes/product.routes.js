@@ -29,7 +29,7 @@ routes.patch('/:id',authMiddleWare,roleMiddleWare("admin"),upload.array("product
 //to delete the selected product 
 routes.delete('/:id',authMiddleWare,roleMiddleWare("admin"),deleteProduct)
 //to get the products with filters 
-routes.get("/",authMiddleWare,getProducts)
+routes.get("/",getProducts)
 // to get the single product 
-routes.get("/:id",authMiddleWare,getProductByid)
+routes.get("/:id",getProductByid)
 module.exports=routes

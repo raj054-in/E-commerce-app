@@ -3,6 +3,7 @@ const cartModel= require('../models/cart.model')
 const orderModel=require('../models/order.model')
 const {buildPaymentForm,decodeAndVerifyCallback,checkTransactionStatus}=require('../config/esewa')
 const productModel = require('../models/products.model')
+const userModel = require('../models/user.model')
 
 
 async function getMyOrders(req,res) {
@@ -10,14 +11,14 @@ async function getMyOrders(req,res) {
         const userId=req.user._id
         const orders= await orderModel.find({
             userId:userId
-        })
+        }).sort({ createdAt: -1 })
         res.status(200).json({
             message:"You Orders Fetched Sucessfully",
             orders
         })
     } catch (error) {
         res.status(500).json({
-            error:error
+            error:error.message
         })
         
     }
@@ -35,6 +36,9 @@ async function createOrder(req,res) {
     try {
        const {province,city,area,nearestLandmark} =req.body
        const userId= req.user._id
+       if (![province,city,area,nearestLandmark].every((value) => typeof value === "string" && value.trim())) {
+        return res.status(400).json({ message: "Complete shipping details are required" })
+       }
        const cart= await cartModel.findOne({userId:userId}).populate("products.productId")
        if(!cart ||cart.products.length==0){
         return res.status(400).json({
@@ -48,9 +52,9 @@ async function createOrder(req,res) {
             productId:item.productId._id,
             name:item.productId.name,
             quantity:item.quantity,
-            total:item.productId.price*item.quantity
+             total:(item.productId.discountPrice || item.productId.price)*item.quantity
         })
-        totalAmount+=item.productId.price*item.quantity
+         totalAmount+=(item.productId.discountPrice || item.productId.price)*item.quantity
 
        }
        const order=await orderModel.create({
@@ -74,12 +78,104 @@ async function createOrder(req,res) {
     
     } catch (error) {
         res.status(500).json({
-            error:error
+            error:error.message
         })
         
     }
     
 }
+
+async function resumePendingPayment(req, res) {
+    try {
+        const order = await orderModel.findOne({
+            _id: req.params.id,
+            userId: req.user._id
+        })
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" })
+        }
+
+        if (order.paymentStatus === "paid") {
+            return res.status(400).json({ message: "This order has already been paid" })
+        }
+
+        const esewa = await startPayment(order)
+        return res.status(200).json({
+            orderId: order._id,
+            esewa
+        })
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+async function deletePendingOrder(req, res) {
+    try {
+        const order = await orderModel.findOne({
+            _id: req.params.id,
+            userId: req.user._id
+        })
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found"
+            })
+        }
+
+        if (order.paymentStatus !== "pending") {
+            return res.status(400).json({
+                message: "Only pending payment orders can be deleted"
+            })
+        }
+
+        if (order.esewaTransactionUuid) {
+            let status
+            try {
+                status = await checkTransactionStatus({
+                    totalAmount: order.totalAmount,
+                    transactionUuid: order.esewaTransactionUuid
+                })
+            } catch (error) {
+                return res.status(503).json({
+                    message: "Unable to confirm the eSewa payment status. Try again."
+                })
+            }
+
+            if (status.status === "COMPLETE") {
+                return res.status(409).json({
+                    message: "This payment is complete and cannot be deleted"
+                })
+            }
+
+            if (status.status === "PENDING") {
+                return res.status(409).json({
+                    message: "This payment is still being processed"
+                })
+            }
+        }
+
+        const deletedOrder = await orderModel.findOneAndDelete({
+            _id: order._id,
+            userId: req.user._id,
+            paymentStatus: "pending"
+        })
+
+        if (!deletedOrder) {
+            return res.status(409).json({
+                message: "The order payment status changed. Refresh and try again."
+            })
+        }
+
+        return res.status(200).json({
+            message: "Pending order deleted successfully",
+            orderId: deletedOrder._id
+        })
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
 async function verifyEsewaPayment(req,res) {
     try {
         const payload=decodeAndVerifyCallback(req.body.data)
@@ -215,5 +311,54 @@ async function updateDeliveryStatus(req,res) {
     
 }
 
+async function getAdminDashboardSummary(req, res) {
+    try {
+        const [productCount, orderCount, customerCount, revenueResult, pendingOrders, lowStockProducts, recentOrders, statusCounts] = await Promise.all([
+            productModel.countDocuments(),
+            orderModel.countDocuments(),
+            userModel.countDocuments({ role: 'user' }),
+            orderModel.aggregate([
+                { $match: { paymentStatus: 'paid' } },
+                { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+            ]),
+            orderModel.countDocuments({ deliveryStatus: 'pending' }),
+            productModel.find({ countInStock: { $lte: 10 } })
+                .sort({ countInStock: 1, updatedAt: -1 })
+                .limit(5)
+                .select('name sku countInStock price images')
+                .lean(),
+            orderModel.find()
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .populate('userId', 'name email')
+                .populate('items.productId', 'images')
+                .lean(),
+            orderModel.aggregate([
+                { $group: { _id: '$deliveryStatus', count: { $sum: 1 } } }
+            ])
+        ])
 
-module.exports={getMyOrders,createOrder,verifyEsewaPayment,getAllOrders,updateDeliveryStatus}
+        const ordersByStatus = statusCounts.reduce((result, item) => {
+            result[item._id] = item.count
+            return result
+        }, {})
+
+        res.json({
+            metrics: {
+                productCount,
+                orderCount,
+                customerCount,
+                revenue: revenueResult[0]?.total || 0,
+                pendingOrders
+            },
+            ordersByStatus,
+            lowStockProducts,
+            recentOrders
+        })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+}
+
+
+module.exports={getMyOrders,createOrder,resumePendingPayment,deletePendingOrder,verifyEsewaPayment,getAllOrders,updateDeliveryStatus,getAdminDashboardSummary}

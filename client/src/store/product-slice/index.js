@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// UI-only blueprint data. Replace these mock actions with API calls later.
 const mockProducts = [
   {
     _id: "product-1",
@@ -51,16 +50,26 @@ const initialState = {
   shopProducts:[],
   totalPages: 1,
   currentPage: 1,
+  totalProducts: 0,
+  selectedProduct: null,
+  detailLoading: false,
+  detailError: null,
   isLoading: false,
   error: null,
 };
 
 const fetchProducts = createAsyncThunk(
   "product/fetchProducts",
-  async ({ page = 1, limit = 8 } , { rejectWithValue }) => {
+  async ({ page = 1, limit = 8, ...filters } = {}, { rejectWithValue }) => {
     try {
+      const params = new URLSearchParams({ page, limit });
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.set(key, value);
+        }
+      });
       const response = await axios.get(
-        `http://localhost:3000/api/products/?page=${page}&limit=${limit}`,
+        `http://localhost:3000/api/products/?${params.toString()}`,
         {
         withCredentials: true,
         }
@@ -72,12 +81,31 @@ const fetchProducts = createAsyncThunk(
         products,
         totalPages: pagination.totalPage || 1,
         page: pagination.currentPage || page,
+        totalProducts: pagination.totalProducts || 0,
       };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.error ||
           error.response?.data?.message ||
           "Product fetch failed"
+      );
+    }
+  }
+);
+
+const fetchProductById = createAsyncThunk(
+  "product/fetchProductById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`http://localhost:3000/api/products/${id}`, {
+        withCredentials: true,
+      });
+      return response.data.product;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Unable to load this product"
       );
     }
   }
@@ -148,10 +176,24 @@ const productSlice = createSlice({
         state.products = action.payload.products;
         state.totalPages = action.payload.totalPages;
         state.currentPage = action.payload.page;
+        state.totalProducts = action.payload.totalProducts;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || action.error.message;
+      })
+      .addCase(fetchProductById.pending, (state) => {
+        state.detailLoading = true;
+        state.detailError = null;
+        state.selectedProduct = null;
+      })
+      .addCase(fetchProductById.fulfilled, (state, action) => {
+        state.detailLoading = false;
+        state.selectedProduct = action.payload;
+      })
+      .addCase(fetchProductById.rejected, (state, action) => {
+        state.detailLoading = false;
+        state.detailError = action.payload || action.error.message;
       })
       .addCase(addNewProduct.pending, (state) => {
         state.isLoading = true;
@@ -174,5 +216,5 @@ const productSlice = createSlice({
 });
 
 export const { setProducts, clearProductError } = productSlice.actions;
-export { fetchProducts, addNewProduct, updateProduct, deleteProduct };
+export { fetchProducts, fetchProductById, addNewProduct, updateProduct, deleteProduct };
 export default productSlice.reducer;

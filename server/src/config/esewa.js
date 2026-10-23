@@ -1,7 +1,7 @@
 const crypto= require("crypto")
 
 function sign(fields,fieldsName){
-    const message=fieldsName.map((name)=>`${name}=${fields[name]}`)
+    const message=fieldsName.map((name)=>`${name}=${fields[name]}`).join(",")
       return crypto.createHmac("sha256", process.env.ESEWA_SECRET_KEY).update(message).digest("base64")
 }
 function buildPaymentForm(order,transactionUuid){
@@ -32,8 +32,9 @@ function decodeAndVerifyCallback(base64Data){
     } catch (error) {
         return null
     }
+    if (!data?.signature || !data?.signed_field_names) return null
     const expected=Buffer.from(sign(data,data.signed_field_names.split(",")))
-    const recived=Buffer.from(sign(data.signature))
+    const recived=Buffer.from(data.signature)
     if(expected.length!=recived.length) return null
     if(!crypto.timingSafeEqual(expected,recived)) return null
     return data
@@ -48,7 +49,7 @@ async function checkTransactionStatus({ totalAmount, transactionUuid }) {
  
   const res = await fetch(url)
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw gatewayError("eSewa status check failed", data)
+  if (!res.ok) throw new Error(`eSewa status check failed: ${JSON.stringify(data)}`)
  
   return data // contains `status` ("COMPLETE", "PENDING", "NOT_FOUND", ...)
 }
