@@ -21,21 +21,21 @@ const AdminHeader = ({setOpen}) => {
   }
 
   return (
-    <header className='flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm sm:px-6'>
-      <div className='flex items-center gap-3'>
+    <header className='sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-3 shadow-sm sm:px-6'>
+      <div className='flex min-w-0 items-center gap-2 sm:gap-3'>
         <button
           type='button'
           onClick={() => setOpen(true)}
           aria-label='Open navigation menu'
-          className='rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden'
+          className='shrink-0 rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 lg:hidden'
         >
-          <Menu className='h-5 w-5 cursor-pointer'/>
+          <Menu className='h-5 w-5'/>
         </button>
-        <div className='flex items-center gap-2'>
-          <ChartNoAxesCombined className='h-5 w-5 text-slate-900' />
-          <div>
+        <div className='flex min-w-0 items-center gap-2'>
+          <ChartNoAxesCombined className='h-5 w-5 shrink-0 text-slate-900' />
+          <div className='min-w-0'>
             <p className='text-xs font-medium uppercase tracking-wider text-slate-500'>Workspace</p>
-            <h2 className='text-lg font-bold text-slate-900'>Ecom Name</h2>
+            <h2 className='truncate text-base font-bold text-slate-900 sm:text-lg'>Ecom Name</h2>
           </div>
         </div>
       </div>
@@ -46,9 +46,9 @@ const AdminHeader = ({setOpen}) => {
           onClick={handleLogout}
           disabled={isLoading}
           aria-label={`Log out${user?.name ? ` ${user.name}` : ''}`}
-          className='flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60'
+          className='flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3'
         >
-          <span>{isLoading ? 'Logging out...' : 'Log out'}</span>
+          <span className='hidden sm:inline'>{isLoading ? 'Logging out...' : 'Log out'}</span>
           <LogOut className='h-4 w-4'/>
         </button>
       </div>
